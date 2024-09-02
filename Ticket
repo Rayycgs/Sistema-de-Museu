@@ -1,0 +1,266 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <ctype.h>
+#include <locale.h>
+
+// Estrutura para armazenar as respostas do questionário
+typedef struct {
+    int codigoIngresso;
+    int tipoObra;
+    char resposta1;
+    char resposta2;
+    char resposta3;
+    char resposta4;
+    char resposta5;
+} RespostaQuestionario;
+
+// Protótipos das funções
+int gerarCodigo();
+void exibirMenu();
+void salvarRespostasCSV(RespostaQuestionario resposta);
+void visualizarTabelaRespostas();
+char validarResposta();
+
+// Implementação da função gerarCodigo
+int gerarCodigo() {
+    return rand() ^ (int)time(NULL);
+}
+
+    // Implementação da função exibirMenu
+void exibirMenu() {
+
+    printf("\n\n\t\t\t\t\t=== Museu Multitemático ===\n");
+    printf("\n\t\t\t\t\t\t=== Menu ===\n\n\n");
+    printf("\t1. Comprar Ingressos\n");
+    printf("\t2. Visualizar Obras e Responder Questionário\n");
+    printf("\t3. Ver Tabela de Respostas\n");
+    printf("\t4. Sair\n");
+    printf("\n====================================================\n");
+
+}
+
+// Implementação da função salvarRespostasCSV
+void salvarRespostasCSV(RespostaQuestionario resposta) {
+    FILE *arquivo = fopen("respostas.csv", "a");
+
+    if (arquivo != NULL) {
+        fprintf(arquivo, "%d,%d,%c,%c,%c,%c,%c\n",
+                resposta.codigoIngresso, resposta.tipoObra,
+                resposta.resposta1, resposta.resposta2,
+                resposta.resposta3, resposta.resposta4,
+                resposta.resposta5);
+
+        fclose(arquivo);
+    } else {
+
+        printf("Erro ao abrir o arquivo para salvar as respostas.\n");
+
+    }
+}
+
+// Implementação da função validarResposta
+char validarResposta() {
+    char buffer[256];
+    char resposta;
+
+    do {
+        printf("Resposta: ");
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+            // Tratamento de erro na leitura
+            resposta = ' '; // Definindo um valor padrão em caso de erro
+            break;
+        }
+
+        resposta = tolower(buffer[0]);
+
+        if (buffer[1] != '\n' || resposta < 'a' || resposta > 'e') {
+
+            printf("Opção inválida. Digite exatamente uma letra entre 'a' e 'e'.\n");
+
+            // Limpar o buffer de entrada em caso de entrada inválida
+            while (getchar() != '\n');
+        }
+    } while (resposta < 'a' || resposta > 'e');
+
+    return resposta;
+}
+
+
+// Implementação da função visualizarTabelaRespostas
+void visualizarTabelaRespostas() {
+    FILE *arquivo = fopen("respostas.csv", "r");
+
+    if (arquivo != NULL) {
+        printf("\n=== Tabela de Respostas ===\n");
+        printf("Código do Ingresso | Obra Visualizada | Resposta 1 | Resposta 2 | Resposta 3 | Resposta 4 | Resposta 5\n");
+        printf("====================================================================================================\n");
+
+        int codigoIngresso, tipoObra;
+        char resposta1, resposta2, resposta3, resposta4, resposta5;
+
+        while (fscanf(arquivo, "%d,%d,%c,%c,%c,%c,%c\n", &codigoIngresso, &tipoObra, &resposta1, &resposta2, &resposta3, &resposta4, &resposta5) != EOF) {
+            printf("%17d | %16d | %10c | %10c | %10c | %10c | %10c\n",
+                    codigoIngresso, tipoObra, resposta1, resposta2, resposta3, resposta4, resposta5);
+        }
+
+        fclose(arquivo);
+    } else {
+
+        printf("\n\tAinda não há respostas para exibir.\n");
+
+    }
+}
+
+
+int main() {
+    int opcao;
+    int ingressosComprados = 0;
+
+    setlocale(LC_ALL, "portuguese");
+
+    const char *resumos[] = {
+        "100 Anos da Arte Moderna: Uma exposição que celebra o impacto da arte moderna no último século.",
+        "150 Anos de Santo Dumont: Uma homenagem ao pioneiro da aviação, Alberto Santos Dumont.",
+        "Jogos De Paris 2024: Uma visão dos futuros Jogos Olímpicos de 2024 em Paris.",
+        "Copa Do Mundo 2026: Uma antecipação emocionante para a Copa do Mundo de 2026."
+    };
+
+    RespostaQuestionario *respostas = NULL;
+
+    do {
+        exibirMenu();
+        printf("Escolha uma opção: ");
+
+        while (scanf("%d", &opcao) != 1) {
+            while (getchar() != '\n');
+            printf("Opção inválida. Digite um número.\n");
+            printf("Escolha uma opção: ");
+        }
+
+        switch (opcao) {
+        case 1:
+            // Código para comprar ingressos (um por vez)
+            {
+                int quantidadeDesejada = 0;
+                int tipoIngresso;
+
+                printf("\t\nQuantos ingressos deseja comprar?: ");
+                scanf("%d", &quantidadeDesejada);
+
+                if (quantidadeDesejada < 1 || quantidadeDesejada > 20) {
+                    printf("\nQuantidade inválida. Digite um valor entre 1 a 20.\n");
+                    continue;
+                }
+
+                respostas = (RespostaQuestionario *)malloc(quantidadeDesejada * sizeof(RespostaQuestionario));
+                if (respostas == NULL) {
+                    printf("\nErro ao alocar memória.\n");
+                    exit(EXIT_FAILURE);
+                }
+
+                while (quantidadeDesejada > 0) {
+                    int codigoIngresso = gerarCodigo();
+
+                    printf("\n\tEscolha o tipo de ingresso:\n");
+                    printf("\t1. Entrada Cheia - R$20,00\n");
+                    printf("\t2. Meia Entrada (estudantes) - R$10,00\n");
+                    printf("\t3. Isenção (menores de 6 anos e PCD) - R$00,00\n");
+                    printf("Opção: ");
+                    scanf("%d", &tipoIngresso);
+
+                    if (tipoIngresso < 1 || tipoIngresso > 3) {
+                        printf("\nTipo de ingresso inválido. Escolha novamente.\n");
+                        continue;
+                    }
+
+                    printf("\n\t\t=== Ingresso comprado! Código:%d ===\n", codigoIngresso);
+
+                    respostas[ingressosComprados].codigoIngresso = codigoIngresso;
+                    respostas[ingressosComprados].tipoObra = 0;
+                    ingressosComprados++;
+
+                    quantidadeDesejada--;
+                }
+            }
+            break;
+
+        case 2:
+            // Visualizar obras e responder questionário
+            if (ingressosComprados > 0) {
+                for (int i = 0; i < ingressosComprados; i++) {
+                    if (respostas[i].tipoObra == 0) {
+                        int tipoObra;
+                        printf("\n\t\t\t\t===Escolha o tipo de obra que deseja visualizar:===\n\n");
+                        printf("\t1. 100 Anos da Arte Moderna\n");
+                        printf("\t2. 150 Anos de Santos Dumont\n");
+                        printf("\t3. Jogos De Paris 2024\n");
+                        printf("\t4. Copa Do Mundo 2026\n");
+                        printf("Opção: ");
+                        scanf("%d", &tipoObra);
+
+                        while (getchar() != '\n');  // Limpa o buffer de entrada
+
+                        if (tipoObra >= 1 && tipoObra <= 4) {
+                            respostas[i].tipoObra = tipoObra;
+
+                            printf("Resumo: %s\n", resumos[tipoObra - 1]);
+
+                            printf("Responda ao questionário de satisfação:\n");
+
+                            printf("1. Como se sente em relação à obra?\n ");
+                            printf("\n   a. Nada satisfeito\n   b. Um pouco satisfeito\n   c. Satisfeito\n   d. Muito Satisfeito\n   e. Totalmente satisfeito\n\n");
+                            respostas[i].resposta1 = validarResposta();
+
+                            printf("2. Qual é o seu nível de satisfação com a originalidade e criatividade da obra?\n ");
+                            printf("\n   a. Nada satisfeito\n   b. Um pouco satisfeito\n   c. Satisfeito\n   d. Muito Satisfeito\n   e. Totalmente satisfeito\n\n");
+                            respostas[i].resposta2 = validarResposta();
+
+                            printf("3. Em relação à qualidade da obra, como você se sente?\n ");
+                            printf("\n   a. Nada satisfeito\n   b. Um pouco satisfeito\n   c. Satisfeito\n   d. Muito Satisfeito\n   e. Totalmente satisfeito\n\n");
+                            respostas[i].resposta3 = validarResposta();
+
+                            printf("4. O que você achou da qualidade da obra?\n ");
+                            printf("\n   a. Nada satisfeito\n   b. Um pouco satisfeito\n   c. Satisfeito\n   d. Muito Satisfeito\n   e. Totalmente satisfeito\n\n");
+                            respostas[i].resposta4 = validarResposta();
+
+                            printf("5. Em relação à experiência ao apreciar esta obra de arte, como se sente?\n ");
+                            printf("\n   a. Nada satisfeito\n   b. Um pouco satisfeito\n   c. Satisfeito\n   d. Muito Satisfeito\n   e. Totalmente satisfeito\n\n");
+                            respostas[i].resposta5 = validarResposta();
+
+                            salvarRespostasCSV(respostas[i]);
+
+                            printf("\n\tObrigado pela sua avaliação!\n");
+                        } else {
+                            printf("\n\tOpção inválida. Tente novamente.\n");
+                            i--;
+                        }
+                    } else {
+                        printf("\n\tVocê já visualizou e respondeu ao questionário desta obra.\n");
+                    }
+                }
+            } else {
+                printf("\n\tVocê precisa comprar o(s) ingresso(s) antes de visualizar obras.\n");
+            }
+            break;
+
+        case 3:
+            // Ver tabela de respostas
+            visualizarTabelaRespostas();
+            break;
+
+        case 4:
+            // Sair do menu
+            free(respostas);
+            printf("\n\tObrigado Por Visitar, Volte Sempre!!\n\n");
+            break;
+
+        default:
+            printf("\n\tOpcao inválida. Tente novamente.\n");
+            break;
+        }
+
+    } while (opcao != 4);
+
+    return 0;
+}
